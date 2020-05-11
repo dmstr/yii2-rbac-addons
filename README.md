@@ -9,3 +9,7 @@ The package ...
 ## General usage
 
 ### Example
+
+---
+
+Built by [dmstr](http://diemeisterei.de)
