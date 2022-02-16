@@ -120,8 +120,13 @@ class Migration extends BaseMigration
                     $privilege['_force'] ?? null
                 );
             } else {
+                if ($privilege['type'] === Item::TYPE_ROLE) {
+                    $methodName = 'getRole';
+                } else {
+                    $methodName = 'getPermission';
+                }
                 // use existing item
-                $current = Yii::$app->authManager->getRole($privilege['name']);
+                $current = Yii::$app->authManager->$methodName($privilege['name']);
                 if (!$current) {
                     throw new \yii\base\Exception("Item '{$privilege['name']}' not found");
                 }
