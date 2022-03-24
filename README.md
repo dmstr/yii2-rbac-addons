@@ -20,7 +20,7 @@ class m000000_000000_my_example_migration extends Migration {
         [
             'name' => 'Role1',
             'type' => Item::TYPE_ROLE,
-            'description' => 'My custom description'
+            'description' => 'My custom description',
             'children' => [
                 [
                     'name' => 'permission1',
@@ -40,6 +40,7 @@ class m000000_000000_my_example_migration extends Migration {
                             'type' => Item::TYPE_PERMISSION
                         ]
                     ]
+                ]
             ]
         ]
     ];
