@@ -77,14 +77,30 @@ class Migration extends BaseMigration
 {
 
     /**
-     * privilege option name to define boolean _exists flag
+     * deprecated flags before ensure was implemented
      */
     const EXISTS = '_exists';
+    const FORCE = '_force';
 
     /**
-     * privilege option name to define boolean _force flag
+     * ensure value: item MUST already exists
      */
-    const FORCE = '_force';
+    const MUST_EXIST = 'must_exist';
+
+    /**
+     * ensure value: item will be created if not exists
+     */
+    const PRESENT = 'present';
+
+    /**
+     * ensure value: item will be removed
+     */
+    const ABSENT = 'absent';
+
+    /**
+     * ensure value: item may not exists yet
+     */
+    const NEW = 'new';
 
     /**
      * array of privilege definitions that should be handled by this migration
@@ -100,6 +116,21 @@ class Migration extends BaseMigration
      * @var ManagerInterface|null
      */
     public $authManager;
+
+    public $defaultFlags = [
+        'ensure' => self::NEW,
+        'replace' => false,
+        'rule' => [],
+        'description' => null,
+    ];
+
+    /**
+     * if true migrate/down calls will remove defined items
+     * ! handle with care !
+     *
+     * @var bool
+     */
+    public $removeOnMigrateDown = false;
 
     /**
      * @return void
@@ -120,7 +151,14 @@ class Migration extends BaseMigration
      */
     public function safeUp()
     {
-        $this->generatePrivileges($this->privileges);
+        try {
+            $this->generatePrivileges($this->privileges);
+        } catch (\Exception $e) {
+            echo 'Exception: ' . $e->getMessage() . ' (' . $e->getFile() . ':' . $e->getLine() . ")\n";
+            return false;
+        }
+        return true;
+
     }
 
 
@@ -129,7 +167,13 @@ class Migration extends BaseMigration
      */
     public function safeDown()
     {
-        $this->removePrivileges($this->privileges);
+        if ($this->removeOnMigrateDown) {
+            $this->removePrivileges($this->privileges);
+        }
+        else {
+            echo $this::className() . " cannot be reverted.\n";
+            return false;
+        }
     }
 
     /**
@@ -147,25 +191,26 @@ class Migration extends BaseMigration
 
             echo "Process $type_name: '{$privilege['name']}'" . PHP_EOL;
 
-            if (!isset($privilege[static::EXISTS])) {
-                // create new item, if _exists is not set
-                $current = $this->createPrivilege(
-                    $privilege['name'],
-                    $privilege['type'],
-                    $privilege['description'] ?? null,
-                    $privilege['rule'] ?? [],
-                    $privilege[static::FORCE] ?? null
-                );
-            } else {
-                $getter = $this->getGetter($privilege['type']);
-                // use existing item
-                $current = Yii::$app->authManager->{$getter}($privilege['name']);
-                if (!$current) {
-                    throw new \yii\base\Exception("Item '{$privilege['name']}' not found");
-                }
+            $this->setItemFlags($privilege);
+            $getter = $this->getGetter($privilege['type']);
+            // search for existing item
+            $current = Yii::$app->authManager->{$getter}($privilege['name']);
+
+            // must item exists already?
+            if ($privilege['ensure'] === self::MUST_EXIST && !$current) {
+                throw new \yii\base\Exception("Item '{$privilege['name']}' not found but has MUST_EXIST flag.");
+            }
+            // item should NOT exists already?
+            if ($privilege['ensure'] === self::NEW && $current) {
+                throw new \yii\base\Exception("Item '{$privilege['name']}' exists but has NEW flag.");
             }
 
-            if ($parent) {
+            // ... or should we create or update item ?
+            if ($privilege['ensure'] === self::NEW || $privilege['ensure'] === self::PRESENT) {
+                $current = $this->createPrivilege($privilege);
+            }
+
+            if ($parent && $current) {
                 if ($this->authManager->hasChild($parent, $current)) {
                     echo "Existing child '" . $current->name . "' of '" . $parent->name . "' found" . PHP_EOL;
                 } else if (!$this->authManager->addChild($parent, $current)) {
@@ -180,45 +225,49 @@ class Migration extends BaseMigration
     }
 
     /**
-     * Create privilege if not exist and returns its object
+     * Create or Update privilege item
      *
-     * @param string $name
-     * @param string $type
-     * @param array $rule_data
+     * @param array $item
      * @return Permission|Role
      * @throws ErrorException
      */
-    private function createPrivilege($name, $type, $description, $rule_data = [], $force = false)
+    private function createPrivilege($item)
     {
-        $type_name = $this->getTypeName($type);
-        $getter = $this->getGetter($type);
+        $type_name = $this->getTypeName($item['type']);
+        $getter = $this->getGetter($item['type']);
+        $createMethod = 'create' . $type_name;
+        $name = $item['name'];
 
-        // check if permission or role exists and create it
-        if ($force || $this->authManager->{$getter}($name) === null) {
-            $privilege = $this->authManager->{'create' . $type_name}($name);
-            $privilege->description = $description;
+        // should existing be updated?
+        if ($this->authManager->{$getter}($name) !== null) {
+            echo "Found $type_name: '$name'..." . PHP_EOL;
 
-            if (!empty($rule_data)) {
-                $privilege->ruleName = $this->createRule($rule_data)->name;
-            }
-
-            if ($force && $this->authManager->{$getter}($name) !== null) {
-                echo "Force updating $type_name: '$name'..." . PHP_EOL;
+            if ($item['replace']) {
+                $privilege = $this->authManager->{$getter}($name);
+                $privilege->description = $item['description'];
+                if (!empty($item['rule'])) {
+                    $privilege->ruleName = $this->createRule($item['rule'])->name;
+                }
+                echo "Updating $type_name: '$name'..." . PHP_EOL;
                 if (!$this->authManager->update($name, $privilege)) {
                     throw new ErrorException('Cannot update ' . mb_strtolower($type_name) . ' ' . $name);
                 }
-            } else {
-                echo "Creating $type_name: '$name'..." . PHP_EOL;
-                if (!$this->authManager->add($privilege)) {
-                    throw new ErrorException('Cannot create ' . mb_strtolower($type_name) . ' ' . $name);
-                }
             }
         } else {
-            $msg = "$type_name '$name' already exists" . PHP_EOL;
-            throw new ErrorException($msg);
-        }
+            // new item?
+            $privilege              = $this->authManager->{$createMethod}($name);
+            $privilege->description = $item['description'];
+            if (!empty($item['rule'])) {
+                $privilege->ruleName = $this->createRule($item['rule'])->name;
+            }
+            echo "Creating $type_name: '$name'..." . PHP_EOL;
+            if (!$this->authManager->add($privilege)) {
+                throw new ErrorException('Cannot create ' . mb_strtolower($type_name) . ' ' . $name);
+            }
+        } // end create new item
 
         return $this->authManager->{$getter}($name);
+
     }
 
     /**
@@ -279,8 +328,8 @@ class Migration extends BaseMigration
             if (!$result) {
                 throw new \Exception('Can not create rule');
             }
-        } else if ($rule_data[self::FORCE] && ($rule = $this->authManager->getRule($name))) {
-            echo "Force updating Rule: '$name'..." . PHP_EOL;
+        } else if (!empty($rule_data['replace'])) {
+            echo "Updating Rule: '$name'..." . PHP_EOL;
             $this->authManager->update($name, $this->getRuleInstance($name, $class));
         } else {
             echo "Rule '$name' already exists" . PHP_EOL;
@@ -331,5 +380,22 @@ class Migration extends BaseMigration
     private function getTypeName($type)
     {
         return $type === Item::TYPE_ROLE ? 'Role' : 'Permission';
+    }
+
+    /**
+     * assign itemFlags with values from defaultFlags if not set
+     *
+     * @param $item
+     *
+     * @return mixed
+     */
+    private function setItemFlags(&$item)
+    {
+        foreach ($this->defaultFlags as $key => $value) {
+            if (!array_key_exists($key, $item)) {
+                $item[$key] = $value;
+            }
+        }
+        return $item;
     }
 }
