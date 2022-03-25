@@ -48,6 +48,19 @@ class m000000_000000_my_example_migration extends Migration {
 
 ```
 
+## cleanup on safeDown()
+
+in self::safeDown() permissions will be removed recursively according to config
+to prevent this, just override safeDown() in your migration class
+
+```
+    public function safeDown()
+    {
+        echo $this::className() . " cannot be reverted.\n";
+        return false;
+    }
+```
+
 ---
 
 Built by [dmstr](http://diemeisterei.de)
