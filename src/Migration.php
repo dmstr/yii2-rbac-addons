@@ -321,6 +321,11 @@ class Migration extends BaseMigration
         $name = $rule_data['name'];
         $class = $rule_data['class'];
 
+        if (!empty($rule_data[self::FORCE])) {
+            echo "migration uses deprecated flag '_force' for rule. This should be replaced 'replace' => true";
+            $rule_data['replace'] = true;
+        }
+
         echo "Process Rule: '$name'" . PHP_EOL;
         if ($this->authManager->getRule($name) === null) {
             echo "Creating Rule: $name" . PHP_EOL;
@@ -391,6 +396,17 @@ class Migration extends BaseMigration
      */
     private function setItemFlags(&$item)
     {
+
+        if (!empty($item[self::EXISTS])) {
+            echo "migration uses deprecated flag '_exists'. This should be replaced with 'ensure' => 'must_exist'";
+            $item['ensure'] = self::MUST_EXIST;
+        }
+        if (!empty($item[self::FORCE])) {
+            echo "migration uses deprecated flag '_force'. This should be replaced with 'ensure' => 'present' , 'replace' => true";
+            $item['ensure'] = self::PRESENT;
+            $item['replace'] = true;
+        }
+
         foreach ($this->defaultFlags as $key => $value) {
             if (!array_key_exists($key, $item)) {
                 $item[$key] = $value;
@@ -398,4 +414,5 @@ class Migration extends BaseMigration
         }
         return $item;
     }
+
 }
