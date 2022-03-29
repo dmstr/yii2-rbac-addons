@@ -420,12 +420,17 @@ class Migration extends BaseMigration
     /**
      * assign itemFlags with values from defaultFlags if not set
      *
-     * @param $item
+     * @param array|string $item
      *
-     * @return mixed
+     * @return array
      */
     private function setItemFlags(&$item)
     {
+        // if only name is given as string, cast to array and set name param
+        if(is_string($item)) {
+            $item = ['name' => $item];
+        }
+
         $defaultFlags = ArrayHelper::merge($this->_defaultFlagsStruct, $this->defaultFlags);
 
         if (!empty($item[self::EXISTS])) {
