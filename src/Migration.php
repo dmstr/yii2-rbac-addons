@@ -333,7 +333,7 @@ class Migration extends BaseMigration
 
 
     /**
-     * TODO: add _exists check as in generatePrivileges() ?
+     * TODO: add ensure flag checks as in generatePrivileges() ?
      *
      * Creates rule by given parameters
      *
