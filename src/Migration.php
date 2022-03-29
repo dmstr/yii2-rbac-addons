@@ -16,6 +16,7 @@ use yii\base\ErrorException;
 use yii\base\InvalidArgumentException;
 use yii\db\Exception;
 use yii\db\Migration as BaseMigration;
+use yii\helpers\ArrayHelper;
 use yii\rbac\Item;
 use yii\rbac\ManagerInterface;
 use yii\rbac\Permission;
@@ -117,12 +118,36 @@ class Migration extends BaseMigration
      */
     public $authManager;
 
-    public $defaultFlags = [
-        'ensure' => self::NEW,
-        'replace' => false,
-        'rule' => [],
+    /**
+     * flag struct with default values
+     * This struct ensures all required flags are set
+     *
+     * can be overridden via defaultFlags and/or item params
+     *
+     * @see setItemFlags()
+     *
+     * @var array
+     */
+    protected $_defaultFlagsStruct = [
+        'name'        => null,
+        'ensure'      => self::NEW,
+        'replace'     => false,
+        'rule'        => [],
         'description' => null,
+        'type'        => Item::TYPE_PERMISSION,
     ];
+
+    protected $_requiredItemFlags  = [
+        'name',
+    ];
+
+    /**
+     * can be used to define defaults for all items in this migration
+     * @see $_defaultFlagsStruct
+     *
+     * @var array
+     */
+    public $defaultFlags = [];
 
     /**
      * if true migrate/down calls will remove defined items
@@ -187,11 +212,13 @@ class Migration extends BaseMigration
     private function generatePrivileges($privileges = [], $parent = null)
     {
         foreach ($privileges as $privilege) {
+            // merge given item flags with defaults
+            $this->setItemFlags($privilege);
+
             $type_name = $this->getTypeName($privilege['type']);
 
             echo "Process $type_name: '{$privilege['name']}'" . PHP_EOL;
 
-            $this->setItemFlags($privilege);
             $getter = $this->getGetter($privilege['type']);
             // search for existing item
             $current = Yii::$app->authManager->{$getter}($privilege['name']);
@@ -271,7 +298,8 @@ class Migration extends BaseMigration
     }
 
     /**
-     * TODO: this destroy information if _force flag is set on item!!
+     * TODO: this destroy information if item exists BEFORE
+     * TODO: it crete new Item if not exists and not check if item exists before remove()
      *
      * remove privileges recursively
      * used in self::safeDown()
@@ -284,11 +312,13 @@ class Migration extends BaseMigration
     private function removePrivileges($privileges)
     {
         foreach ($privileges AS $privilege) {
-            $item_type = ($privilege['type'] === Item::TYPE_ROLE ? 'Role' : 'Permission');
+
+            $this->setItemFlags($privilege);
+            $item_type = $this->getTypeName($privilege['type']);
             $item_name = $privilege['name'];
 
-            if (isset($privilege[static::EXISTS])) {
-                echo "Skipped '$item_name' (marked exists)" . PHP_EOL;
+            if ($privilege['ensure'] === static::MUST_EXIST) {
+                echo "Skipped '$item_name' (marked MUST_EXIST)" . PHP_EOL;
             } else {
                 $privilegeObj = $this->authManager->{'create' . $item_type}($item_name);
                 if (!$this->authManager->remove($privilegeObj)) {
@@ -396,6 +426,7 @@ class Migration extends BaseMigration
      */
     private function setItemFlags(&$item)
     {
+        $defaultFlags = ArrayHelper::merge($this->_defaultFlagsStruct, $this->defaultFlags);
 
         if (!empty($item[self::EXISTS])) {
             echo "migration uses deprecated flag '_exists'. This should be replaced with 'ensure' => 'must_exist'";
@@ -407,7 +438,13 @@ class Migration extends BaseMigration
             $item['replace'] = true;
         }
 
-        foreach ($this->defaultFlags as $key => $value) {
+        foreach ($this->_requiredItemFlags as $flag) {
+            if (empty($item[$flag])) {
+                throw new InvalidArgumentException("param '{$flag}' has to be set for each privileges item!");
+            }
+        }
+
+        foreach ($defaultFlags as $key => $value) {
             if (!array_key_exists($key, $item)) {
                 $item[$key] = $value;
             }
