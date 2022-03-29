@@ -237,6 +237,11 @@ class Migration extends BaseMigration
                 $current = $this->createPrivilege($privilege);
             }
 
+            // ... or should item be deleted?
+            if ($privilege['ensure'] === self::ABSENT && $current) {
+                $this->removePrivilege($privilege);
+            }
+
             if ($parent && $current) {
                 if ($this->authManager->hasChild($parent, $current)) {
                     echo "Existing child '" . $current->name . "' of '" . $parent->name . "' found" . PHP_EOL;
@@ -249,6 +254,38 @@ class Migration extends BaseMigration
 
             $this->generatePrivileges($privilege['children'] ?? [], $current);
         }
+    }
+
+    /**
+     * Remove privilege item if exists
+     *
+     * @param $item
+     *
+     * @return void
+     * @throws Exception
+     */
+    private function removePrivilege($item)
+    {
+        $type_name = $this->getTypeName($item['type']);
+        $getter = $this->getGetter($item['type']);
+        $name = $item['name'];
+        $current = $this->authManager->{$getter}($name);
+
+        echo "Check $type_name: '$name' for removal..." . PHP_EOL;
+
+        // if not found, nothing has to be done here...
+        if ($current === null) {
+            echo "$type_name: '$name' does not exists" . PHP_EOL;
+            return;
+        }
+
+        // ...else: try to delete
+        echo "Found $type_name: '$name'..." . PHP_EOL;
+        if (!$this->authManager->remove($current)) {
+            throw new Exception("Can not remove '$name'");
+        }
+        echo "Removed $type_name '$name'" . PHP_EOL;
+
     }
 
     /**
@@ -344,6 +381,7 @@ class Migration extends BaseMigration
     private function createRule($rule_data)
     {
 
+        // if only name than set param MUST_EXISTS?
         if (empty($rule_data['name']) || empty($rule_data['class'])) {
             throw new InvalidArgumentException("'name' and 'class' must be defined in rule config");
         }
