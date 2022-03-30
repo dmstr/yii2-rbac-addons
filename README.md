@@ -92,12 +92,18 @@ defined params are merged per item.
 
 ### valid flags for `ensure` param
 
-| flag | desc                                                                           |
-| -----|--------------------------------------------------------------------------------|
-| self::NEW | new item will be created, error if already exists                              |
-| self::MUST_EXISTS | item must exist, error if not                                                  |
-| self::PRESENT | ensure item exists, if `replace == true` update/replace, otherwise leave as is |
-| self::ABSENT | if item extists it will be removed. Handle with care!                          |
+| flag | desc                                                                                                                                   |
+| -----|----------------------------------------------------------------------------------------------------------------------------------------|
+| self::NEW | new item will be created, error if already exists                                                                                      |
+| self::MUST_EXISTS | item must exist, error if not                                                                                                          |
+| self::PRESENT | ensure item exists, if `replace == true` update/replace, otherwise leave as is                                                         |
+| self::ABSENT | if item extists item will be removed. Handle with care! |
+
+### hints for `self::ABSENT`
+
+- If defined as item param, the item will be removed regardless of its position.
+- So if you define `ensure => self::ABSENT` in child items, NOT only the child relation but the item will be removed!
+- if auth items are defined in DB and the auth tables has FK with cascade, child relations for this item may be deleted by the db.
 
 ### hints for rules
 
