@@ -27,33 +27,35 @@ use yii\rbac\Rule;
  * Just extend your migration class from this one. => mxxxxxx_xxxxxx_migration_namee extends project\components\RbacMigration
  * Generates roles and permissions recursively when defined in following pattern:
  *
- * use yii\rbac\Item;
+ *  use yii\rbac\Item;
  *
- * public $privileges = [
+ *  public $privileges = [
  *      [
- *          '_exists' => true,
- *          'name' => 'Role_0',
+ *          'name' => 'Role1',
  *          'type' => Item::TYPE_ROLE,
+ *          'description' => 'My custom description',
+ *          'ensure' => self::PRESENT,
+ *          'replace' => true,
  *          'children' => [
  *              [
- *                  'name' => 'permission_0',
- *                  'type' => Item::TYPE_PERMISSION
- *              ],
- *              [
- *                  '_force' => true,
- *                  'name' => 'permission_1',
+ *                  'name' => 'permission1',
  *                  'type' => Item::TYPE_PERMISSION,
  *                  'rule' => [
- *                      'name' => 'Rule0',
- *                      'class' => some\namespaced\Rule::class
- *                  ]
+ *                     'name' => 'Rule0',
+ *                     'class' => some\namespaced\Rule::class
+ *                 ]
  *              ],
  *              [
- *                  'name' => 'Role_1',
+ *                  'name' => 'permission2',
  *                  'type' => Item::TYPE_PERMISSION,
+ *                  'ensure' => self::MUST_EXISTS
+ *              ],
+ *              [
+ *                  'name' => 'Role1',
+ *                  'ensure' => self::PRESENT,
  *                  'children' => [
  *                      [
- *                          'name' => 'permission_2',
+ *                          'name' => 'permission3',
  *                          'type' => Item::TYPE_PERMISSION
  *                      ]
  *                  ]
@@ -61,12 +63,11 @@ use yii\rbac\Rule;
  *          ]
  *      ],
  *      [
- *          'name' => 'Role_2',
- *          'type' => Item::TYPE_ROLE
- *      ]
- * ];
- *
- *
+ *          'name' => 'permission3',
+ *          'type' => Item::TYPE_PERMISSION,
+ *          'ensure' => self::ABSENT
+ *      ],
+ *  ];
  *
  * @package project\components
  * @author Elias Luhr <e.luhr@herzogkommunikation.de>
@@ -336,7 +337,7 @@ class Migration extends BaseMigration
 
     /**
      * TODO: this destroy information if item exists BEFORE
-     * TODO: it crete new Item if not exists and not check if item exists before remove()
+     * TODO: it create new Item if not exists and not check if item exists before remove()
      *
      * remove privileges recursively
      * used in self::safeDown()
