@@ -391,7 +391,7 @@ class Migration extends BaseMigration
         $class = $rule_data['class'];
 
         if (!empty($rule_data[self::FORCE])) {
-            echo "migration uses deprecated flag '_force' for rule. This should be replaced 'replace' => true";
+            echo "migration uses deprecated flag '_force' for rule. This should be replaced 'replace' => true" . PHP_EOL;
             $rule_data['replace'] = true;
         }
 
@@ -473,11 +473,11 @@ class Migration extends BaseMigration
         $defaultFlags = ArrayHelper::merge($this->_defaultFlagsStruct, $this->defaultFlags);
 
         if (!empty($item[self::EXISTS])) {
-            echo "migration uses deprecated flag '_exists'. This should be replaced with 'ensure' => 'must_exist'";
+            echo "migration uses deprecated flag '_exists'. This should be replaced with 'ensure' => 'must_exist'" . PHP_EOL;
             $item['ensure'] = self::MUST_EXIST;
         }
         if (!empty($item[self::FORCE])) {
-            echo "migration uses deprecated flag '_force'. This should be replaced with 'ensure' => 'present' , 'replace' => true";
+            echo "migration uses deprecated flag '_force'. This should be replaced with 'ensure' => 'present' , 'replace' => true" . PHP_EOL;
             $item['ensure'] = self::PRESENT;
             $item['replace'] = true;
         }
