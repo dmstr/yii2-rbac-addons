@@ -151,14 +151,6 @@ class Migration extends BaseMigration
     public $defaultFlags = [];
 
     /**
-     * if true migrate/down calls will remove defined items
-     * ! handle with care !
-     *
-     * @var bool
-     */
-    public $removeOnMigrateDown = false;
-
-    /**
      * @return void
      */
     public function init()
@@ -193,13 +185,8 @@ class Migration extends BaseMigration
      */
     public function safeDown()
     {
-        if ($this->removeOnMigrateDown) {
-            $this->removePrivileges($this->privileges);
-        }
-        else {
-            echo $this::className() . " cannot be reverted.\n";
-            return false;
-        }
+        echo $this::className() . " cannot be reverted.\n";
+        return false;
     }
 
     /**
@@ -334,41 +321,6 @@ class Migration extends BaseMigration
         return $this->authManager->{$getter}($name);
 
     }
-
-    /**
-     * TODO: this destroy information if item exists BEFORE
-     * TODO: it create new Item if not exists and not check if item exists before remove()
-     *
-     * remove privileges recursively
-     * used in self::safeDown()
-     *
-     * @param $privileges
-     *
-     * @return void
-     * @throws Exception
-     */
-    private function removePrivileges($privileges)
-    {
-        foreach ($privileges AS $privilege) {
-
-            $this->setItemFlags($privilege);
-            $item_type = $this->getTypeName($privilege['type']);
-            $item_name = $privilege['name'];
-
-            if ($privilege['ensure'] === static::MUST_EXIST) {
-                echo "Skipped '$item_name' (marked MUST_EXIST)" . PHP_EOL;
-            } else {
-                $privilegeObj = $this->authManager->{'create' . $item_type}($item_name);
-                if (!$this->authManager->remove($privilegeObj)) {
-                    throw new Exception("Can not remove '$item_name'");
-                }
-                echo "Removed '$item_name'" . PHP_EOL;
-            }
-
-            $this->removePrivileges($privilege['children'] ?? []);
-        }
-    }
-
 
     /**
      * TODO: add ensure flag checks as in generatePrivileges() ?

@@ -148,19 +148,9 @@ Example:
 
 ```
 
-## cleanup on safeDown()
+## safeDown()
 
-in self::safeDown() permissions will be removed recursively according to config if `removeOnMigrateDown=true`
-
-Or override safeDown() in your migration class
-
-```
-    public function safeDown()
-    {
-        echo $this::className() . " cannot be reverted.\n";
-        return false;
-    }
-```
+These auth migrations can not be reverted.
 
 ---
 
