@@ -81,14 +81,15 @@ class m000000_000000_my_example_migration extends Migration {
 
 defined params are merged per item.
 
-| param  | value   | required | default | description                                                             |
-|--------|---------| ---------| --------|-------------------------------------------------------------------------|
-| name   | string  | yes      | null    | rbac item name                                                          |
-| type   | Item::TYPE_ROLE or Item::TYPE_PERMISSION | no | Item::TYPE_PERMISSION | rbac item type                                                          |
-| description | string | no | null | description property of the item                                        |
-| ensure | see ensure flags | no | self::NEW | ensure state of the item after and before migration                     |
-| replace | boolean | no | false | weather item will be updated if exists                                  |
-| rule | array | no | empty | array of name, class properties that will be used as rule for this item |
+| param  | value   | required | default               | description                                                    |
+|--------|---------| ---------|-----------------------|----------------------------------------------------------------|
+| name   | string  | yes      | null                  | rbac item name                                                 |
+| type   | Item::TYPE_ROLE or Item::TYPE_PERMISSION | no | Item::TYPE_PERMISSION | rbac item type                                                 |
+| ensure | see ensure flags | no | self::NEW             | ensure state of the item after and before migration            |
+| replace | boolean | no | false                 | weather item will be updated if exists                         |
+| rule | array | no | none                  | array of name, class properties that will be used as rule for this item |
+| description | string | no | none                  | description property of the item                               |
+
 
 ### valid flags for `ensure` param
 

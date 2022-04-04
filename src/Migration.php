@@ -133,8 +133,6 @@ class Migration extends BaseMigration
         'name'        => null,
         'ensure'      => self::NEW,
         'replace'     => false,
-        'rule'        => [],
-        'description' => null,
         'type'        => Item::TYPE_PERMISSION,
     ];
 
@@ -296,7 +294,9 @@ class Migration extends BaseMigration
 
             if ($item['replace']) {
                 $privilege = $this->authManager->{$getter}($name);
-                $privilege->description = $item['description'];
+                if (isset($item['description'])) {
+                    $privilege->description = $item['description'];
+                }
                 if (!empty($item['rule'])) {
                     $privilege->ruleName = $this->createRule($item['rule'])->name;
                 }
@@ -308,7 +308,9 @@ class Migration extends BaseMigration
         } else {
             // new item?
             $privilege              = $this->authManager->{$createMethod}($name);
-            $privilege->description = $item['description'];
+            if (isset($item['description'])) {
+                $privilege->description = $item['description'];
+            }
             if (!empty($item['rule'])) {
                 $privilege->ruleName = $this->createRule($item['rule'])->name;
             }
