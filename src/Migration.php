@@ -48,7 +48,7 @@ use yii\rbac\Rule;
  *              [
  *                  'name' => 'permission2',
  *                  'type' => Item::TYPE_PERMISSION,
- *                  'ensure' => self::MUST_EXISTS
+ *                  'ensure' => self::MUST_EXIST
  *              ],
  *              [
  *                  'name' => 'Role1',
