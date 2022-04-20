@@ -50,7 +50,7 @@ class m000000_000000_my_example_migration extends Migration {
                 [
                     'name' => 'permission2',
                     'type' => Item::TYPE_PERMISSION,
-                    'ensure' => self::MUST_EXISTS
+                    'ensure' => self::MUST_EXIST
                 ],
                 [
                     'name' => 'Role1',
@@ -96,7 +96,7 @@ defined params are merged per item.
 | flag | desc                                                                                                                                   |
 | -----|----------------------------------------------------------------------------------------------------------------------------------------|
 | self::NEW | new item will be created, error if already exists                                                                                      |
-| self::MUST_EXISTS | item must exist, error if not                                                                                                          |
+| self::MUST_EXIST | item must exist, error if not                                                                                                          |
 | self::PRESENT | ensure item exists, if `replace == true` update/replace, otherwise leave as is                                                         |
 | self::ABSENT | if item extists item will be removed. Handle with care! |
 
@@ -131,7 +131,7 @@ Example:
 ```php
     public $defaultFlags = [
         'type'    => Item::TYPE_PERMISSION,
-        'ensure'  => self::MUST_EXISTS,
+        'ensure'  => self::MUST_EXIST,
         'replace' => false,
     ];
     public $privileges = [

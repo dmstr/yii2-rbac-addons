@@ -336,7 +336,7 @@ class Migration extends BaseMigration
     private function createRule($rule_data)
     {
 
-        // if only name than set param MUST_EXISTS?
+        // if only name than set param MUST_EXIST?
         if (empty($rule_data['name']) || empty($rule_data['class'])) {
             throw new InvalidArgumentException("'name' and 'class' must be defined in rule config");
         }
