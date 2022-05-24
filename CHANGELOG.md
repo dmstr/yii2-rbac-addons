@@ -1,5 +1,7 @@
 # _____ Change Log
 
+# 2.0.0
+
 - refactored item flags, see README.md
 - add default params for items
 - add type checks for given params
